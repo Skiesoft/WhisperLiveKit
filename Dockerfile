@@ -34,6 +34,8 @@ RUN pip3 install --upgrade pip setuptools wheel && \
             --index-url https://download.pytorch.org/whl/cu129 \
             torch torchvision torchaudio)
 
+RUN pip install pydub httpx
+
 COPY . .
 
 # Install WhisperLiveKit directly, allowing for optional dependencies

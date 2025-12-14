@@ -8,6 +8,13 @@ from fastapi.responses import HTMLResponse
 
 from whisperlivekit import (AudioProcessor, TranscriptionEngine,
                             get_inline_ui_html, parse_args)
+from pydub import AudioSegment
+import httpx
+import os
+import subprocess
+import json
+import re
+import uuid
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logging.getLogger().setLevel(logging.WARNING)
@@ -207,7 +214,6 @@ async def websocket_endpoint(websocket: WebSocket):
     audio_processor = AudioProcessor(
         transcription_engine=transcription_engine,
     )
-    await websocket.accept()
     logger.info("WebSocket connection opened.")
 
     try:
