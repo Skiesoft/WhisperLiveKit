@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04
+FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -38,13 +38,7 @@ COPY . .
 
 # Install WhisperLiveKit directly, allowing for optional dependencies
 # Example: --build-arg EXTRAS="translation"
-RUN if [ -n "$EXTRAS" ]; then \
-      echo "Installing with extras: [$EXTRAS]"; \
-      pip install --no-cache-dir "whisperlivekit[$EXTRAS]"; \
-    else \
-      echo "Installing base package only"; \
-      pip install --no-cache-dir whisperlivekit; \
-    fi
+RUN pip install -e .
 
 # In-container caching for Hugging Face models by: 
 # A) Make the cache directory persistent via an anonymous volume.
