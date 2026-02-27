@@ -36,6 +36,9 @@ RUN pip3 install --upgrade pip setuptools wheel && \
 
 RUN pip install pydub httpx
 
+# Install NeMo toolkit with ASR support for Sortformer diarization
+RUN pip install "git+https://github.com/NVIDIA/NeMo.git@main#egg=nemo_toolkit[asr]"
+
 COPY . .
 
 # Install WhisperLiveKit directly, allowing for optional dependencies
