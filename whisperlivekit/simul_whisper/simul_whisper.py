@@ -15,7 +15,7 @@ from whisperlivekit.whisper.audio import (N_FRAMES, N_SAMPLES,
                                           TOKENS_PER_SECOND,
                                           log_mel_spectrogram, pad_or_trim)
 from whisperlivekit.whisper.decoding import (BeamSearchDecoder, GreedyDecoder,
-                                             SuppressTokens)
+                                             NoRepeatNGram, SuppressTokens)
 from whisperlivekit.whisper.timing import median_filter
 
 from ..timed_objects import PUNCTUATION_MARKS
@@ -163,7 +163,9 @@ class AlignAtt:
         suppress_tokens = tuple(sorted(set(suppress_tokens)))
         logger.debug(f"Suppress tokens: {suppress_tokens}")
         sup_tokens = SuppressTokens(suppress_tokens)
+        no_repeat = NoRepeatNGram(ngram_size=3)
         self.state.suppress_tokens_fn = lambda logits: sup_tokens.apply(logits, None)
+        self.state.no_repeat_ngram_fn = lambda logits, tokens: no_repeat.apply(logits, tokens)
 
         # Initialize tokens
         self.init_tokens()
@@ -384,6 +386,10 @@ class AlignAtt:
 
     @torch.no_grad()
     def infer(self, is_last=False):
+        # Always clean KV cache at the start to prevent stale cache from
+        # a previous call that may have exited via exception.
+        self._clean_cache()
+
         new_segment = True
         if len(self.state.segments) == 0:
             logger.debug("No segments, nothing to do")
@@ -523,6 +529,9 @@ class AlignAtt:
                 logits[:, self.tokenizer.encode(" ") + [self.tokenizer.eot]] = -np.inf
             new_segment = False
             self.state.suppress_tokens_fn(logits)
+            # Prevent repeated n-grams from being generated (anti-hallucination)
+            if self.state.no_repeat_ngram_fn is not None:
+                self.state.no_repeat_ngram_fn(logits, current_tokens)
             current_tokens, completed = self.state.token_decoder.update(current_tokens, logits, sum_logprobs)
 
             logger.debug(f"Decoding completed: {completed}, sum_logprobs: {sum_logprobs.tolist()}, tokens: ")
@@ -645,7 +654,7 @@ class AlignAtt:
 
         # Hold incomplete tokens for next chunk (with limit to prevent hallucination accumulation)
         self.state.pending_incomplete_tokens = []
-        MAX_PENDING_TOKENS = 10  # Real incomplete UTF-8 chars are at most a few tokens
+        MAX_PENDING_TOKENS = 4  # Real incomplete UTF-8 chars are at most 2-3 tokens
         if split_words and replacement_char in split_words[-1]:
             if len(split_tokens[-1]) <= MAX_PENDING_TOKENS:
                 self.state.pending_incomplete_tokens = split_tokens[-1]

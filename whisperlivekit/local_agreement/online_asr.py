@@ -46,8 +46,10 @@ class HypothesisBuffer:
                     # Try to match 1 to 5 consecutive tokens
                     max_ngram = min(min(committed_len, new_len), 5)
                     for i in range(1, max_ngram + 1):
-                        committed_ngram = " ".join(token.text for token in self.committed_in_buffer[-i:])
-                        new_ngram = " ".join(token.text for token in self.new[:i])
+                        # Use list comparison instead of space-joined strings
+                        # to correctly handle CJK languages that don't use spaces
+                        committed_ngram = [token.text for token in self.committed_in_buffer[-i:]]
+                        new_ngram = [token.text for token in self.new[:i]]
                         if committed_ngram == new_ngram:
                             removed = []
                             for _ in range(i):

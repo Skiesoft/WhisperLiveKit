@@ -433,6 +433,35 @@ class SuppressTokens(LogitFilter):
         logits[:, self.suppress_tokens] = -np.inf
 
 
+class NoRepeatNGram(LogitFilter):
+    """Prevent the model from generating any n-gram that already appeared in the
+    generated sequence.  This is the standard technique used in language-model
+    decoding to break repetition loops and is especially effective for CJK
+    languages where Whisper tends to hallucinate repeated phrases."""
+
+    def __init__(self, ngram_size: int = 3, start_after: int = 0):
+        self.ngram_size = ngram_size
+        self.start_after = start_after
+
+    def apply(self, logits: Tensor, tokens: Tensor):
+        if tokens is None:
+            return
+        for i in range(tokens.shape[0]):
+            gen = tokens[i].tolist()
+            if len(gen) < self.ngram_size + self.start_after:
+                continue
+            # Build set of all n-grams seen so far
+            banned_tokens: set = set()
+            for j in range(len(gen) - self.ngram_size + 1):
+                ngram = tuple(gen[j : j + self.ngram_size])
+                # If the current (n-1)-gram suffix matches this n-gram prefix,
+                # the next token would complete a repeated n-gram -> ban it
+                if tuple(gen[-(self.ngram_size - 1) :]) == ngram[:-1]:
+                    banned_tokens.add(ngram[-1])
+            if banned_tokens:
+                logits[i, list(banned_tokens)] = -np.inf
+
+
 class ApplyTimestampRules(LogitFilter):
     def __init__(
         self,

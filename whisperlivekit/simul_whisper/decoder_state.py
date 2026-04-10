@@ -39,7 +39,8 @@ class DecoderState:
     never_fire: bool = False
     
     suppress_tokens_fn: Any = None
-    
+    no_repeat_ngram_fn: Any = None
+
     token_decoder: Any = None
     decoder_type: str = "greedy"
     
