@@ -218,6 +218,9 @@ class OnlineASRProcessor:
         """
         current_audio_processed_upto = self.get_audio_buffer_end_time()
         prompt_text, _ = self.prompt()
+        user_init_prompt = getattr(self.asr, "init_prompt", None)
+        if user_init_prompt:
+            prompt_text = f"{user_init_prompt} {prompt_text}".strip()
         logger.debug(
             f"Transcribing {len(self.audio_buffer)/self.SAMPLING_RATE:.2f} seconds from {self.buffer_time_offset:.2f}"
         )

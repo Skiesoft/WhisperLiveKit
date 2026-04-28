@@ -141,6 +141,7 @@ class TranscriptionEngine:
                     "buffer_trimming": "segment",
                     "confidence_validation": False,
                     "buffer_trimming_sec": 15,
+                    "init_prompt": None,
                 }
                 whisperstreaming_params = update_with_kwargs(
                     whisperstreaming_params, kwargs

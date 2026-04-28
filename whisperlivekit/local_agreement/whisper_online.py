@@ -84,6 +84,7 @@ def backend_factory(
             confidence_validation,
             warmup_file=None,
             min_chunk_size=None,
+            init_prompt=None,
         ):
     backend_choice = backend
     custom_reference = model_path or model_dir
@@ -162,6 +163,7 @@ def backend_factory(
     asr.buffer_trimming = buffer_trimming
     asr.buffer_trimming_sec = buffer_trimming_sec
     asr.backend_choice = backend_choice
+    asr.init_prompt = init_prompt
     return asr
 
 
